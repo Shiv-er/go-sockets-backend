@@ -2,70 +2,24 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
-	"github.com/gorilla/websocket"
+	"github.com/shiv-er/go-sockets-backend/pkg/websocket"
 )
 
-//create an upgrader
-//know what an upgrader is and does
-//it requires read and write buffer size
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-
-	//check for the origin of connection,
-	//authorise based on that
-	//it also helps
-
-	//here, we just allow anybody
-	CheckOrigin: func(r *http.Request) bool { return true },
-
-	//here, we check the origin
-}
-
-//reader reads new msgs
-//which is being sent to endpoint from websocket
-func reader(conn *websocket.Conn) {
-	for {
-		// read in a message
-		messageType, p, err := conn.ReadMessage()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		// print out that message for clarity
-		fmt.Println(string(p))
-
-		if err := conn.WriteMessage(messageType, p); err != nil {
-			log.Println(err)
-			return
-		}
-
-	}
-}
-
-// define our WebSocket endpoint
 func serveWs(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.Host)
 
-	// upgrade this connection to a WebSocket
-	// connection
-	ws, err := upgrader.Upgrade(w, r, nil)
+	ws, err := websocket.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		log.Println(w, "%+V\n", err)
 	}
-	// listen indefinitely for new messages coming
-	// through on our WebSocket connection
-	reader(ws)
+
+	go websocket.Writer(ws)
+	websocket.Reader(ws)
 }
 
 func setupRoutes() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Simple server")
-	})
-
 	http.HandleFunc("/ws", serveWs)
 }
 

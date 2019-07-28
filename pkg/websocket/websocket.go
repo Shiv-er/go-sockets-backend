@@ -8,7 +8,7 @@ import(
 	"fmt"
 	"io"
 	"log"
-	"net/hhtp"
+	"net/http"
 
 	"github.com/gorilla/websocket"
 )
